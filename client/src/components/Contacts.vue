@@ -29,5 +29,9 @@
   }
   .contact{
     padding: 10px 15px;
+    cursor: pointer;
+    &:hover{
+      background-color: #eaeaea;
+    }
   }
 </style>

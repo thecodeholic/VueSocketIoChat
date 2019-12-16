@@ -1,20 +1,8 @@
 <template>
   <div id="app">
-    <Messenger/>
+    <router-view/>
   </div>
 </template>
-
-<script>
-
-  import Messenger from "./components/Messenger";
-
-  export default {
-    name: 'app',
-    components: {
-      Messenger
-    }
-  }
-</script>
 
 <style lang="scss">
   html, body, #app {
