@@ -35,6 +35,11 @@
   }
 </script>
 
-<style>
-
+<style scoped lang="scss">
+  .messenger {
+    display: flex;
+    background-color: white;
+    height: 100%;
+    border: 1px solid #ebebeb;
+  }
 </style>
