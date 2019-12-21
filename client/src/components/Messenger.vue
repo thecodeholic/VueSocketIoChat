@@ -1,6 +1,6 @@
 <template>
   <div class="messenger">
-    <Contacts :contacts="contacts"/>
+    <Contacts :contacts="allUsers"/>
     <Messages/>
   </div>
 </template>
@@ -8,6 +8,7 @@
 <script>
   import Contacts from "./Contacts";
   import Messages from "./Messages";
+  import httpClient from "../http.service";
   import auth from "../auth.service";
 
   export default {
@@ -15,16 +16,46 @@
     components: {Messages, Contacts},
     data() {
       return {
-        contacts: []
+        contacts: [],
+        connectedUsers: []
+      }
+    },
+
+    computed: {
+      allUsers() {
+        const newUsers = [];
+        for (let user of this.contacts) {
+          user.online = false;
+          const contact = this.connectedUsers.find(c => c.id === user.id);
+          if (contact) {
+            user.online = true;
+          }
+          newUsers.push(user);
+        }
+        console.log(newUsers);
+        return newUsers.sort((u1) => {
+          if (u1.online){
+            return -1;
+          }
+        });
       }
     },
     sockets: {
       USER_LIST(contacts) {
-        console.log(contacts);
         const currentUser = auth.getUser();
-        this.contacts = contacts.filter(u => u.id !== currentUser.id);
+        this.connectedUsers = contacts.filter(u => u.id !== currentUser.id);
       }
     },
+    async mounted() {
+      try {
+        const {data, status} = await httpClient.getUsers();
+        if (status === 200) {
+          this.contacts = data;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
   }
 </script>
 

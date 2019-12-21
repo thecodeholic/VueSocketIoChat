@@ -2,6 +2,7 @@ var app = require('express')();
 var http = require('http').createServer(app);
 var io = require('socket.io')(http);
 var bodyParser = require('body-parser')
+const bearerToken = require('express-bearer-token');
 var cors = require('cors')
 const UserService = require('./user');
 
@@ -14,10 +15,12 @@ app.use(bodyParser.json());       // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
   extended: true
 }));
+app.use(bearerToken());
 
 app.get('/', function (req, res) {
   res.sendFile(__dirname + '/index.html');
 });
+
 app.post('/register', async function (req, res) {
   try {
     const user = await UserService.register(req.body);
@@ -42,6 +45,27 @@ app.post('/login', async function (req, res) {
     res.status(500);
     res.send(JSON.stringify({message: e}));
   }
+});
+
+app.get('/users', async function(req, res){
+  if (!req.headers.authorization){
+    res.status(401);
+    res.send();
+    return;
+  }
+  const token = req.headers.authorization.split(' ')[1]
+  console.log("Authorization ", token);
+  const user = await UserService.verifyToken(token)
+
+  if (!user){
+    res.status(401);
+    res.send();
+    return;
+  }
+
+  const users = await UserService.getUsers(user);
+
+  res.send(JSON.stringify(users));
 });
 
 io.on('connection', async (socket) => {

@@ -65,6 +65,17 @@ module.exports = {
         }
       });
     })
+  },
+  getUsers(user) {
+    return new Promise((resolve, reject) => {
+      connection.query('SELECT * FROM users WHERE id != ?', user.id, async function (error, users, fields) {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(users);
+        }
+      });
+    });
   }
 };
 
