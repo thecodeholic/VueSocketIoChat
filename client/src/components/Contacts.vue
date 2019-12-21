@@ -1,6 +1,6 @@
 <template>
   <div class="contacts">
-    <b-media class="contact" v-for="(contact, index) in contacts" :key="index">
+    <b-media @click="selectContact(contact)" class="contact" v-for="(contact, index) in contacts" :key="index" :class="{'selected': contact === selectedContact}">
       <template v-slot:aside>
         <b-img rounded="circle" blank blank-color="#ccc" width="64" alt="placeholder"></b-img>
       </template>
@@ -19,6 +19,17 @@
     name: "Contacts",
     props: {
       contacts: Array
+    },
+    data(){
+      return {
+        selectedContact: null,
+      }
+    },
+    methods: {
+      selectContact(contact){
+        this.$emit('selectContact', contact)
+        this.selectedContact = contact;
+      }
     }
   }
 </script>
@@ -34,6 +45,10 @@
     position: relative;
     padding: 10px 15px;
     cursor: pointer;
+
+    &.selected{
+      background-color: #e3eaea;
+    }
 
     &:hover {
       background-color: #eaeaea;

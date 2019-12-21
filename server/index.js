@@ -7,6 +7,7 @@ var cors = require('cors')
 const UserService = require('./user');
 
 const SOCKET_TOKEN_MAP = new Map();
+const USER_ID_SOCKET_MAP = new Map();
 const USER_INFO = {};
 
 app.use(cors())
@@ -80,6 +81,7 @@ io.on('connection', async (socket) => {
         delete user.access_token;
         USER_INFO[token] = user;
         SOCKET_TOKEN_MAP.set(socket, token);
+        USER_ID_SOCKET_MAP.set(user.id, socket);
         // socket.broadcast.emit('USER_CONNECTED', user);
         console.log(getUserArray(token));
         io.emit('USER_LIST', getUserArray(''));
@@ -104,6 +106,7 @@ io.on('connection', async (socket) => {
         delete user.access_token;
         USER_INFO[token] = user;
         SOCKET_TOKEN_MAP.set(socket, token);
+        USER_ID_SOCKET_MAP.set(user.id, socket);
         // socket.broadcast.emit('USER_CONNECTED', USER_INFO[token]);
         io.emit('USER_LIST', getUserArray(''));
         console.log(`User "${user.name}" logged in`);
@@ -115,6 +118,25 @@ io.on('connection', async (socket) => {
     } catch (e) {
       console.error(e);
     }
+  });
+
+  socket.on('SEND_MESSAGE', async ({message, token, userId}) => {
+    console.log(message, token);
+
+    try {
+      const user = await UserService.verifyToken(token);
+      if (user) {
+        const socket = USER_ID_SOCKET_MAP.get(userId);
+        socket.emit('ON_MESSAGE_RECEIVE', {
+          userId: user.id,
+          message: message,
+          time: new Date().toISOString()
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
   });
 
   socket.on('disconnect', function () {
@@ -129,6 +151,7 @@ io.on('connection', async (socket) => {
       }
       delete USER_INFO[token];
       SOCKET_TOKEN_MAP.delete(socket);
+      USER_ID_SOCKET_MAP.delete(user.id);
     }
     io.emit('USER_LIST', getUserArray(''));
   });

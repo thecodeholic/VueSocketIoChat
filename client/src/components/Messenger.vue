@@ -1,7 +1,7 @@
 <template>
   <div class="messenger">
-    <Contacts :contacts="allUsers"/>
-    <Messages/>
+    <Contacts @selectContact="selectContact" :contacts="allUsers"/>
+    <Messages :contacts="contacts" :selected-contact="selectedContact"/>
   </div>
 </template>
 
@@ -17,7 +17,8 @@
     data() {
       return {
         contacts: [],
-        connectedUsers: []
+        connectedUsers: [],
+        selectedContact: null,
       }
     },
 
@@ -25,6 +26,7 @@
       allUsers() {
         const newUsers = [];
         for (let user of this.contacts) {
+          user.messages = user.messages || [];
           user.online = false;
           const contact = this.connectedUsers.find(c => c.id === user.id);
           if (contact) {
@@ -44,6 +46,11 @@
       USER_LIST(contacts) {
         const currentUser = auth.getUser();
         this.connectedUsers = contacts.filter(u => u.id !== currentUser.id);
+      }
+    },
+    methods: {
+      selectContact(contact){
+        this.selectedContact = contact;
       }
     },
     async mounted() {

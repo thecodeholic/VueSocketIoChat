@@ -1,7 +1,7 @@
 <template>
   <div class="messages-wrapper">
     <div class="messages">
-      <b-media class="message" v-for="(message, index) in messages" :key="index"
+      <b-media class="message" v-for="(message, index) in selectedContactMessages" :key="index"
                :class="{'sender-me': message.sender === 'me'}">
         <template v-slot:aside v-if="message.sender !== 'me'">
           <b-img rounded="circle" blank blank-color="#ccc" width="64" alt="placeholder"></b-img>
@@ -15,94 +15,67 @@
       </b-media>
     </div>
     <div class="input-area">
-      <b-input-group>
-        <b-form-textarea
-                id="textarea"
-                placeholder="Enter your message..."
-                rows="3"
-                no-resize
-        ></b-form-textarea>
-        <b-input-group-append>
-          <b-button variant="primary">Send</b-button>
-        </b-input-group-append>
-      </b-input-group>
+      <b-form @submit="sendMessage">
+        <b-input-group>
+          <b-form-textarea
+                  id="textarea"
+                  placeholder="Enter your message..."
+                  rows="3"
+                  v-model="newMessage"
+                  no-resize
+          ></b-form-textarea>
+          <b-input-group-append>
+            <b-button :disabled="!selectedContact" type="submit" variant="primary">Send</b-button>
+          </b-input-group-append>
+        </b-input-group>
+      </b-form>
     </div>
   </div>
 </template>
 
 <script>
+  import auth from "../auth.service";
+
   export default {
     name: "Messages",
+    props: {
+      selectedContact: Object,
+      contacts: Array
+    },
     data() {
       return {
-        messages: [
-          {
-            sender: 'me',
-            message: 'Hi how are you?',
-            time: '2019-12-16 09:16:00'
-          },
-          {
-            sender: 1,
-            name: 'James',
-            message: 'Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? ',
-            time: '2019-12-16 09:16:10'
-          },
-          {
-            sender: 'me',
-            message: 'Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? Hi how are you? ',
-            time: '2019-12-16 09:16:00'
-          },
-          {
-            sender: 1,
-            name: 'James',
-            message: 'I am fine',
-            time: '2019-12-16 09:16:10'
-          },
-          {
-            sender: 'me',
-            message: 'Hi how are you?',
-            time: '2019-12-16 09:16:00'
-          },
-          {
-            sender: 1,
-            name: 'James',
-            message: 'I am fine',
-            time: '2019-12-16 09:16:10'
-          },
-          {
-            sender: 'me',
-            message: 'Hi how are you?',
-            time: '2019-12-16 09:16:00'
-          },
-          {
-            sender: 1,
-            name: 'James',
-            message: 'I am fine',
-            time: '2019-12-16 09:16:10'
-          },
-          {
-            sender: 'me',
-            message: 'Hi how are you?',
-            time: '2019-12-16 09:16:00'
-          },
-          {
-            sender: 1,
-            name: 'James',
-            message: 'I am fine',
-            time: '2019-12-16 09:16:10'
-          },
-          {
-            sender: 'me',
-            message: 'Hi how are you?',
-            time: '2019-12-16 09:16:00'
-          },
-          {
-            sender: 1,
-            name: 'James',
-            message: 'I am fine',
-            time: '2019-12-16 09:16:10'
-          },
-        ]
+        newMessage: '',
+        selectedContactMessages: []
+      }
+    },
+    watch: {
+      selectedContact() {
+        this.selectedContactMessages = this.selectedContact.messages;
+      }
+    },
+    methods: {
+      sendMessage($event){
+        $event.preventDefault();
+        console.log("Sending");
+        this.$socket.emit('SEND_MESSAGE', {
+          token: auth.getToken(),
+          message: this.newMessage,
+          userId: this.selectedContact.id
+        });
+        this.selectedContact.messages.push({
+          message: this.newMessage,
+          sender: 'me'
+        });
+        this.newMessage = '';
+      }
+    },
+    sockets: {
+      ON_MESSAGE_RECEIVE(message) {
+        console.log(message);
+        this.$emit('messageReceived', message);
+        const contact = this.contacts.find(c => c.id === message.userId);
+        contact.messages.push(message);
+        // this.selectedContactMessages.push(message)
       }
     }
   }
@@ -116,6 +89,7 @@
   }
 
   .messages {
+    flex: 1;
     overflow: auto;
     padding: 20px;
   }
@@ -126,6 +100,7 @@
   }
 
   .message {
+    word-break: break-all;
     .text {
       margin-right: 15%;
       background-color: #0b82ff;
