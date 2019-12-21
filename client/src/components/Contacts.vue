@@ -5,7 +5,7 @@
           <b-img rounded="circle" blank blank-color="#ccc" width="64" alt="placeholder"></b-img>
         </template>
 
-        <h5 class="mt-0">John Smith</h5>
+        <h5 class="mt-0">{{contact.name}}</h5>
         <p class="mb-0">
           Fusce condimentum nunc...
         </p>

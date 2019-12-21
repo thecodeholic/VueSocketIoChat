@@ -1,7 +1,7 @@
 <template>
   <div class="register">
     <b-card style="width: 400px; margin: 0 auto" title="Signup for chat">
-      <b-form>
+      <b-form @submit="registerUser">
         <b-form-group
                 id="input-group-1"
                 label="Email address:"
@@ -39,7 +39,7 @@
           Already user?? <router-link :to="'/login'">Click here</router-link> to login
         </p>
 
-        <b-button type="submit" variant="primary" class="mr-2">Submit</b-button>
+        <b-button type="submit" variant="primary" class="mr-2" >Submit</b-button>
         <b-button type="reset" variant="danger">Reset</b-button>
       </b-form>
     </b-card>
@@ -47,11 +47,24 @@
 </template>
 
 <script>
+  import axios from 'axios';
+  import auth from "../auth.service";
+
   export default {
     name: "Register",
     data() {
       return {
         form: {}
+      }
+    },
+    methods: {
+      async registerUser($event){
+        $event.preventDefault();
+        const {data, status} = await axios.post('http://localhost:3000/register', this.form);
+        if (status === 200){
+          auth.setUser(data);
+          this.$router.push('/');
+        }
       }
     }
   }

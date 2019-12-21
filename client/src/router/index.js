@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Home from '../views/Home.vue'
+import auth from "../auth.service";
 
 Vue.use(VueRouter)
 
@@ -8,7 +9,10 @@ const routes = [
   {
     path: '/',
     name: 'home',
-    component: Home
+    component: Home,
+    meta: {
+      requiresAuth: true
+    }
   },
   {
     path: '/register',
@@ -33,5 +37,16 @@ const router = new VueRouter({
   base: process.env.BASE_URL,
   routes
 })
+
+router.beforeEach((to, from, next) => {
+  console.log(to.meta.requiresAuth, auth.isAuthenticated());
+  if (to.meta.requiresAuth && !auth.isAuthenticated()){
+    next('/login');
+  } else if (!to.meta.requiresAuth && auth.isAuthenticated()) {
+    next('/');
+  } else {
+    next();
+  }
+});
 
 export default router

@@ -8,30 +8,23 @@
 <script>
   import Contacts from "./Contacts";
   import Messages from "./Messages";
+  import auth from "../auth.service";
 
   export default {
     name: 'Messenger',
     components: {Messages, Contacts},
-    data(){
+    data() {
       return {
         contacts: []
       }
     },
     sockets: {
-      connect(){
-        console.log("Connection was made");
-      },
-      USER_CONNECTED(contact){
-        console.log(contact);
-        this.contacts.push(contact);
-      },
-      USER_DISCONNECTED(socketId){
-        this.contacts = this.contacts.filter(contact => contact.socketId !== socketId)
-      },
       USER_LIST(contacts) {
-        this.contacts = Object.values(contacts);
+        console.log(contacts);
+        const currentUser = auth.getUser();
+        this.contacts = contacts.filter(u => u.id !== currentUser.id);
       }
-    }
+    },
   }
 </script>
 
