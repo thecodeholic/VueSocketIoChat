@@ -104,7 +104,7 @@ io.on('connection', async (socket) => {
         console.log("=======================================");
       }
       delete USER_INFO[token];
-      SOCKET_TOKEN_MAP.remove(socket);
+      SOCKET_TOKEN_MAP.delete(socket);
     }
     io.emit('USER_LIST', getUserArray(''));
   });
