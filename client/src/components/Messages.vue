@@ -1,18 +1,23 @@
 <template>
   <div class="messages-wrapper">
-    <div class="messages" ref="messages">
-      <b-media class="message" v-for="(message, index) in selectedContactMessages" :key="index"
-               :class="{'sender-me': message.sender === 'me'}">
-        <template v-slot:aside v-if="message.sender !== 'me'">
-          <b-img rounded="circle" blank blank-color="#ccc" width="64" alt="placeholder"></b-img>
-        </template>
+    <div class="messages-ctr">
+      <div class="messages" ref="messages" @scroll="scrollChange">
+        <b-media class="message" v-for="(message, index) in selectedContactMessages" :key="index"
+                 :class="{'sender-me': message.sender === 'me'}">
+          <template v-slot:aside v-if="message.sender !== 'me'">
+            <b-img rounded="circle" blank blank-color="#ccc" width="64" alt="placeholder"></b-img>
+          </template>
 
-        <h5 class="name" v-if="message.sender !== 'me'">John Smith</h5>
-        <p class="text">
-          {{message.message}}
-          <span class="time">2 min.</span>
-        </p>
-      </b-media>
+          <h5 class="name" v-if="message.sender !== 'me'">John Smith</h5>
+          <p class="text">
+            {{message.message}}
+            <span class="time">2 min.</span>
+          </p>
+        </b-media>
+      </div>
+      <button @click="scrollDown" class="unread-messages" v-if="unreadMessages">
+        Unread messages
+      </button>
     </div>
     <div class="input-area">
       <b-form @submit="sendMessage">
@@ -44,6 +49,7 @@
     },
     data() {
       return {
+        unreadMessages: false,
         shouldBeScrollDown: true,
         newMessage: '',
         selectedContactMessages: []
@@ -72,6 +78,15 @@
       isScrollAtTheBottom() {
         const messages = this.$refs.messages;
         return messages.offsetHeight + messages.scrollTop === messages.scrollHeight;
+      },
+      scrollChange(){
+        if (this.isScrollAtTheBottom()){
+          this.unreadMessages = false;
+        }
+      },
+      scrollDown(){
+        const messages = this.$refs.messages;
+        messages.scrollTop = 10000000;
       }
     },
     sockets: {
@@ -80,14 +95,16 @@
         this.$emit('messageReceived', message);
         const contact = this.contacts.find(c => c.id === message.userId);
         this.shouldBeScrollDown = this.isScrollAtTheBottom();
+        if (!this.shouldBeScrollDown){
+          this.unreadMessages = true;
+        }
         contact.messages.push(message);
         // this.selectedContactMessages.push(message)
       }
     },
     updated() {
-      const messages = this.$refs.messages;
       if (this.shouldBeScrollDown) {
-        messages.scrollTop = 10000000;
+        this.scrollDown()
       }
     }
   }
@@ -100,10 +117,35 @@
     flex-direction: column;
   }
 
-  .messages {
+  .messages-ctr{
     flex: 1;
     overflow: auto;
+    position: relative;
+  }
+  .messages {
+    height: 100%;
+    overflow: auto;
     padding: 20px;
+  }
+
+  .unread-messages {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    width: 160px;
+    text-align: center;
+    margin-left: -80px;
+    background-color: #ffffff;
+    color: #007bff;
+    padding: 5px 10px;
+    border-radius: 20px;
+    border: 2px solid #007bff;
+    outline: 0;
+    transition: all 0.3s;
+    &:hover{
+      color: white;
+      background-color: #007bff;
+    }
   }
 
   .input-area {
