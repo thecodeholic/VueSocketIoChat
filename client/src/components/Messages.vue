@@ -1,6 +1,6 @@
 <template>
   <div class="messages-wrapper">
-    <div class="messages">
+    <div class="messages" ref="messages">
       <b-media class="message" v-for="(message, index) in selectedContactMessages" :key="index"
                :class="{'sender-me': message.sender === 'me'}">
         <template v-slot:aside v-if="message.sender !== 'me'">
@@ -44,6 +44,7 @@
     },
     data() {
       return {
+        shouldBeScrollDown: true,
         newMessage: '',
         selectedContactMessages: []
       }
@@ -54,7 +55,7 @@
       }
     },
     methods: {
-      sendMessage($event){
+      sendMessage($event) {
         $event.preventDefault();
         console.log("Sending");
         this.$socket.emit('SEND_MESSAGE', {
@@ -67,6 +68,10 @@
           sender: 'me'
         });
         this.newMessage = '';
+      },
+      isScrollAtTheBottom() {
+        const messages = this.$refs.messages;
+        return messages.offsetHeight + messages.scrollTop === messages.scrollHeight;
       }
     },
     sockets: {
@@ -74,8 +79,15 @@
         console.log(message);
         this.$emit('messageReceived', message);
         const contact = this.contacts.find(c => c.id === message.userId);
+        this.shouldBeScrollDown = this.isScrollAtTheBottom();
         contact.messages.push(message);
         // this.selectedContactMessages.push(message)
+      }
+    },
+    updated() {
+      const messages = this.$refs.messages;
+      if (this.shouldBeScrollDown) {
+        messages.scrollTop = 10000000;
       }
     }
   }
@@ -101,6 +113,7 @@
 
   .message {
     word-break: break-all;
+
     .text {
       margin-right: 15%;
       background-color: #0b82ff;
