@@ -2,7 +2,7 @@
   <div class="messages-wrapper">
     <div class="messages-ctr">
       <div class="messages" ref="messages" @scroll="scrollChange">
-        <b-media class="message" v-for="(message, index) in selectedContactMessages" :key="index"
+        <b-media class="message" v-for="(message, index) in messages" :key="index"
                  :class="{'sender-me': message.sender === 'me'}">
           <template v-slot:aside v-if="message.sender !== 'me'">
             <b-img rounded="circle" blank blank-color="#ccc" width="64" alt="placeholder"></b-img>
@@ -23,6 +23,7 @@
       <b-form @submit="sendMessage">
         <b-input-group>
           <b-form-textarea
+                  @keyup="onKeyUp"
                   id="textarea"
                   placeholder="Enter your message..."
                   rows="3"
@@ -45,21 +46,22 @@
     name: "Messages",
     props: {
       selectedContact: Object,
-      contacts: Array
+      contacts: Array,
+      messages: Array
     },
     data() {
       return {
         unreadMessages: false,
         shouldBeScrollDown: true,
         newMessage: '',
-        selectedContactMessages: []
+        // selectedContactMessages: []
       }
     },
-    watch: {
-      selectedContact() {
-        this.selectedContactMessages = this.selectedContact.messages;
-      }
-    },
+    // watch: {
+    //   selectedContact() {
+    //     this.selectedContactMessages = this.selectedContact.messages;
+    //   }
+    // },
     methods: {
       sendMessage($event) {
         $event.preventDefault();
@@ -69,7 +71,7 @@
           message: this.newMessage,
           userId: this.selectedContact.id
         });
-        this.selectedContact.messages.push({
+        this.messages.push({
           message: this.newMessage,
           sender: 'me'
         });
@@ -79,14 +81,19 @@
         const messages = this.$refs.messages;
         return messages.offsetHeight + messages.scrollTop === messages.scrollHeight;
       },
-      scrollChange(){
-        if (this.isScrollAtTheBottom()){
+      scrollChange() {
+        if (this.isScrollAtTheBottom()) {
           this.unreadMessages = false;
         }
       },
-      scrollDown(){
+      scrollDown() {
         const messages = this.$refs.messages;
         messages.scrollTop = 10000000;
+      },
+      onKeyUp(ev){
+        if (ev.key === 'Enter' && !ev.shiftKey){
+          this.sendMessage(ev);
+        }
       }
     },
     sockets: {
@@ -95,10 +102,12 @@
         this.$emit('messageReceived', message);
         const contact = this.contacts.find(c => c.id === message.userId);
         this.shouldBeScrollDown = this.isScrollAtTheBottom();
-        if (!this.shouldBeScrollDown){
+        if (!this.shouldBeScrollDown) {
           this.unreadMessages = true;
         }
-        contact.messages.push(message);
+        if (contact.id === this.selectedContact.id) {
+          this.messages.push(message);
+        }
         // this.selectedContactMessages.push(message)
       }
     },
@@ -117,11 +126,12 @@
     flex-direction: column;
   }
 
-  .messages-ctr{
+  .messages-ctr {
     flex: 1;
     overflow: auto;
     position: relative;
   }
+
   .messages {
     height: 100%;
     overflow: auto;
@@ -142,7 +152,8 @@
     border: 2px solid #007bff;
     outline: 0;
     transition: all 0.3s;
-    &:hover{
+
+    &:hover {
       color: white;
       background-color: #007bff;
     }

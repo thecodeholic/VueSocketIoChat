@@ -5,6 +5,7 @@ var bodyParser = require('body-parser')
 const bearerToken = require('express-bearer-token');
 var cors = require('cors')
 const UserService = require('./user');
+const MessageService = require('./messages');
 
 const SOCKET_TOKEN_MAP = new Map();
 const USER_ID_SOCKET_MAP = new Map();
@@ -69,6 +70,38 @@ app.get('/users', async function(req, res){
   res.send(JSON.stringify(users));
 });
 
+app.get('/messages/:id', async function(req, res){
+  if (!req.headers.authorization){
+    res.status(401);
+    res.send();
+    return;
+  }
+  const token = req.headers.authorization.split(' ')[1]
+  console.log("Authorization ", token);
+  const user = await UserService.verifyToken(token)
+
+  if (!user){
+    res.status(401);
+    res.send();
+    return;
+  }
+
+  const userId = req.params.id;
+  console.log(userId);
+  let messages = await MessageService.getMessages(user.id, userId);
+  messages = messages.map(msg => {
+    return {
+      id: msg.id,
+      sender: msg.sender_id === user.id ? 'me' : msg.sender_id,
+      userId: userId,
+      message: msg.message,
+      time: msg.send_date
+    }
+  });
+
+  res.send(JSON.stringify(messages));
+});
+
 io.on('connection', async (socket) => {
 
   let token = socket.handshake.query && socket.handshake.query.token;
@@ -127,6 +160,9 @@ io.on('connection', async (socket) => {
       const user = await UserService.verifyToken(token);
       if (user) {
         const socket = USER_ID_SOCKET_MAP.get(userId);
+
+        const msg = await MessageService.saveMessage(user.id, userId, message);
+
         socket.emit('ON_MESSAGE_RECEIVE', {
           userId: user.id,
           message: message,

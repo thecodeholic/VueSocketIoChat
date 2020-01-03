@@ -1,7 +1,7 @@
 <template>
   <div class="messenger">
     <Contacts @selectContact="selectContact" :contacts="allUsers"/>
-    <Messages :contacts="contacts" :selected-contact="selectedContact"/>
+    <Messages :contacts="contacts" :selected-contact="selectedContact" :messages="selectedContactMessages"/>
   </div>
 </template>
 
@@ -19,6 +19,7 @@
         contacts: [],
         connectedUsers: [],
         selectedContact: null,
+        selectedContactMessages: []
       }
     },
 
@@ -49,8 +50,14 @@
       }
     },
     methods: {
-      selectContact(contact){
+      async selectContact(contact){
         this.selectedContact = contact;
+        // if (!contact.messages.length){
+        const {data, status} = await httpClient.get('/messages/'+contact.id);
+        if (status === 200){
+          this.selectedContactMessages = data;
+        }
+        // }
       }
     },
     async mounted() {
