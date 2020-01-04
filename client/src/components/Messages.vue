@@ -65,6 +65,9 @@
     methods: {
       sendMessage($event) {
         $event.preventDefault();
+        if (!this.newMessage.trim()){
+          return;
+        }
         console.log("Sending");
         this.$socket.emit('SEND_MESSAGE', {
           token: auth.getToken(),
@@ -74,6 +77,12 @@
         this.messages.push({
           message: this.newMessage,
           sender: 'me'
+        });
+        this.$emit('updateLatestMessage', {
+          contact: this.selectedContact,
+          message: {
+            message: this.newMessage
+          }
         });
         this.newMessage = '';
       },
@@ -105,7 +114,8 @@
         if (!this.shouldBeScrollDown) {
           this.unreadMessages = true;
         }
-        if (contact.id === this.selectedContact.id) {
+        this.$emit('updateLatestMessage', {contact, message});
+        if (this.selectedContact && contact.id === this.selectedContact.id) {
           this.messages.push(message);
         }
         // this.selectedContactMessages.push(message)

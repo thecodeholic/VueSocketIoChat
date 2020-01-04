@@ -68,7 +68,10 @@ module.exports = {
   },
   getUsers(user) {
     return new Promise((resolve, reject) => {
-      connection.query('SELECT * FROM users WHERE id != ?', user.id, async function (error, users, fields) {
+      connection.query(`SELECT 
+        u.*, 
+        (SELECT message FROM messages m WHERE m.sender_id = u.id OR m.receiver_id = u.id ORDER BY send_date DESC LIMIT 1)  as latestMessage
+        FROM users u WHERE u.id != ?`, user.id, async function (error, users, fields) {
         if (error) {
           reject(error);
         } else {

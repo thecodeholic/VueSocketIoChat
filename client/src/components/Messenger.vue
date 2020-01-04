@@ -1,7 +1,10 @@
 <template>
   <div class="messenger">
     <Contacts @selectContact="selectContact" :contacts="allUsers"/>
-    <Messages :contacts="contacts" :selected-contact="selectedContact" :messages="selectedContactMessages"/>
+    <Messages @updateLatestMessage="updateLatestMessage"
+              :contacts="contacts"
+              :selected-contact="selectedContact"
+              :messages="selectedContactMessages"/>
   </div>
 </template>
 
@@ -28,6 +31,7 @@
         const newUsers = [];
         for (let user of this.contacts) {
           user.messages = user.messages || [];
+          user.latestMessage = user.latestMessage || {};
           user.online = false;
           const contact = this.connectedUsers.find(c => c.id === user.id);
           if (contact) {
@@ -37,7 +41,7 @@
         }
         console.log(newUsers);
         return newUsers.sort((u1) => {
-          if (u1.online){
+          if (u1.online) {
             return -1;
           }
         });
@@ -50,14 +54,22 @@
       }
     },
     methods: {
-      async selectContact(contact){
+      async selectContact(contact) {
         this.selectedContact = contact;
         // if (!contact.messages.length){
-        const {data, status} = await httpClient.get('/messages/'+contact.id);
-        if (status === 200){
+        const {data, status} = await httpClient.get('/messages/' + contact.id);
+        if (status === 200) {
           this.selectedContactMessages = data;
         }
         // }
+      },
+      updateLatestMessage({contact, message}){
+        const user = this.contacts.find(u => u.id === contact.id)
+        user.latestMessage = message;
+        if (!this.selectedContact || user.id !== this.selectedContact.id) {
+          user.hasUnreadMessage = true;
+        }
+        this.contacts = [...this.contacts];
       }
     },
     async mounted() {

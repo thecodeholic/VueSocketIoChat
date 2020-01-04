@@ -65,7 +65,16 @@ app.get('/users', async function(req, res){
     return;
   }
 
-  const users = await UserService.getUsers(user);
+  let users = await UserService.getUsers(user);
+  users = users.map(u => {
+    console.log(u);
+    return {
+      ...u,
+      latestMessage: {
+        message: u.latestMessage
+      }
+    }
+  })
 
   res.send(JSON.stringify(users));
 });
