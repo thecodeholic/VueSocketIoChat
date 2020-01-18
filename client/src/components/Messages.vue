@@ -43,7 +43,7 @@
             <b-img rounded="circle" blank blank-color="#ccc" width="64" alt="placeholder"></b-img>
           </template>
 
-          <h5 class="name" v-if="message.sender !== 'me'">John Smith</h5>
+          <h5 class="name" v-if="message.sender !== 'me'">{{message.sender}}</h5>
           <p class="text">
             {{message.message}}
             <span class="time">2 min.</span>

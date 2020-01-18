@@ -21,7 +21,9 @@ module.exports = {
   },
   getMessagesByRoom: (roomId) => {
     return new Promise((resolve, reject) => {
-      connection.query('SELECT * FROM messages WHERE room_id = ?', [roomId], async function (error, messages, fields) {
+      connection.query(`SELECT m.*, u.name as sender_name FROM messages m
+            JOIN users u on m.sender_id = u.id
+            WHERE room_id = ?`, [roomId], async function (error, messages, fields) {
         if (error) {
           reject(error);
         } else if (messages) {

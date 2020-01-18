@@ -140,7 +140,7 @@ app.get('/messages-by-room/:id', async function (req, res) {
   messages = messages.map(msg => {
     return {
       id: msg.id,
-      sender: msg.sender_id === user.id ? 'me' : msg.sender_id,
+      sender: msg.sender_id === user.id ? 'me' : msg.sender_name,
       roomId: roomId,
       message: msg.message,
       time: msg.send_date
@@ -224,6 +224,7 @@ io.on('connection', async (socket) => {
           if (s !== socket) {
             s.emit('ON_MESSAGE_RECEIVE', {
               userId: user.id,
+              sender: user.name,
               roomId,
               message: message,
               time: new Date().toISOString()
