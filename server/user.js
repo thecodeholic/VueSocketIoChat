@@ -68,7 +68,9 @@ module.exports = {
   },
   getUsers(user) {
     return new Promise((resolve, reject) => {
-      connection.query(`SELECT u.* FROM users u WHERE u.id != ?`, user.id, async function (error, users, fields) {
+      connection.query(`SELECT id, email, name
+                        FROM users
+                        WHERE id != ?`, user.id, async function (error, users, fields) {
         if (error) {
           reject(error);
         } else {
@@ -80,15 +82,20 @@ module.exports = {
   getRooms(user) {
     return new Promise((resolve, reject) => {
       connection.query(`
-        SELECT r.id, ru.user_id,
-               GROUP_CONCAT(ru2.user_id) as user_ids,
-               (SELECT message FROM messages m WHERE m.room_id = ru2.room_id ORDER BY send_date DESC LIMIT 1) as latestMessage
-        FROM rooms r
-            JOIN room_users ru on r.id = ru.room_id
-            JOIN room_users ru2 on ru2.room_id = r.id
-        WHERE ru.user_id = ?
-        AND ru2.user_id != ?
-        GROUP BY ru2.room_id
+          SELECT r.id,
+                 r.created_by as user_id,
+                 GROUP_CONCAT(ru2.user_id) as user_ids,
+                 (SELECT message
+                  FROM messages m
+                  WHERE m.room_id = ru2.room_id
+                  ORDER BY send_date DESC
+                  LIMIT 1)                 as latestMessage
+          FROM rooms r
+                   JOIN room_users ru on r.id = ru.room_id
+                   JOIN room_users ru2 on ru2.room_id = r.id
+          WHERE ru.user_id = ?
+            AND ru2.user_id != ?
+          GROUP BY ru2.room_id
       `, [user.id, user.id], async function (error, rooms, fields) {
         if (error) {
           reject(error);
@@ -101,7 +108,9 @@ module.exports = {
 
   getByIds(userIds) {
     return new Promise((resolve, reject) => {
-      connection.query(`SELECT * FROM users WHERE id IN (?)`, [userIds], async function (error, users, fields) {
+      connection.query(`SELECT *
+                        FROM users
+                        WHERE id IN (?)`, [userIds], async function (error, users, fields) {
         if (error) {
           reject(error);
         } else {
@@ -109,6 +118,43 @@ module.exports = {
         }
       });
     });
+  },
+  createRoom(currentUserId, userIds) {
+
+    return new Promise((resolve, reject) => {
+      connection.query('INSERT INTO rooms SET ?', {
+        created_at: Date.now(),
+        created_by: currentUserId
+      }, (error, results, fields) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        const promises = [];
+        const roomId = results.insertId;
+        userIds.forEach(userId => {
+          promises.push(this.addRoomUser(roomId, userId));
+        });
+
+        Promise.all(promises)
+          .then(result => {
+            resolve({roomId, result})
+          });
+      });
+    })
+  },
+
+  addRoomUser(room_id, user_id) {
+    return new Promise((resolve, reject) => {
+      connection.query('INSERT INTO room_users SET ?', {room_id, user_id, created_at: Date.now()},
+        function (error, results, fields) {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve(results.insertId);
+        });
+    })
   }
 };
 

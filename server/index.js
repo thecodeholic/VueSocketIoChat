@@ -9,6 +9,7 @@ const MessageService = require('./messages');
 
 const SOCKET_TOKEN_MAP = new Map();
 const USER_ID_SOCKET_MAP = new Map();
+const ROOM_ID_SOCKET_MAP = new Map();
 const USER_INFO = {};
 
 app.use(cors())
@@ -49,8 +50,8 @@ app.post('/login', async function (req, res) {
   }
 });
 
-app.get('/users', async function(req, res){
-  if (!req.headers.authorization){
+app.get('/users', async function (req, res) {
+  if (!req.headers.authorization) {
     res.status(401);
     res.send();
     return;
@@ -59,7 +60,7 @@ app.get('/users', async function(req, res){
   console.log("Authorization ", token);
   const user = await UserService.verifyToken(token)
 
-  if (!user){
+  if (!user) {
     res.status(401);
     res.send();
     return;
@@ -78,8 +79,8 @@ app.get('/users', async function(req, res){
 
   res.send(JSON.stringify(users));
 });
-app.get('/rooms', async function(req, res){
-  if (!req.headers.authorization){
+app.get('/rooms', async function (req, res) {
+  if (!req.headers.authorization) {
     res.status(401);
     res.send();
     return;
@@ -88,7 +89,7 @@ app.get('/rooms', async function(req, res){
   console.log("Authorization ", token);
   const user = await UserService.verifyToken(token)
 
-  if (!user){
+  if (!user) {
     res.status(401);
     res.send();
     return;
@@ -119,7 +120,7 @@ app.get('/rooms', async function(req, res){
   }
   console.log(rooms);
   console.log(userIds, userObj);
-  for (let room of rooms){
+  for (let room of rooms) {
     room.users = users.filter(u => room.user_ids.includes(u.id));
   }
   console.log(rooms);
@@ -136,8 +137,8 @@ app.get('/rooms', async function(req, res){
   res.send(JSON.stringify(rooms));
 });
 
-app.get('/messages/:id', async function(req, res){
-  if (!req.headers.authorization){
+app.get('/messages/:id', async function (req, res) {
+  if (!req.headers.authorization) {
     res.status(401);
     res.send();
     return;
@@ -146,7 +147,7 @@ app.get('/messages/:id', async function(req, res){
   console.log("Authorization ", token);
   const user = await UserService.verifyToken(token)
 
-  if (!user){
+  if (!user) {
     res.status(401);
     res.send();
     return;
@@ -168,8 +169,8 @@ app.get('/messages/:id', async function(req, res){
   res.send(JSON.stringify(messages));
 });
 
-async function checkUserAuthentication(req, res){
-  if (!req.headers.authorization){
+async function checkUserAuthentication(req, res) {
+  if (!req.headers.authorization) {
     res.status(401);
     res.send();
     return null;
@@ -178,7 +179,7 @@ async function checkUserAuthentication(req, res){
   console.log("Authorization ", token);
   const user = await UserService.verifyToken(token);
 
-  if (!user){
+  if (!user) {
     res.status(401);
     res.send();
     return null;
@@ -186,10 +187,10 @@ async function checkUserAuthentication(req, res){
   return user;
 }
 
-app.get('/messages-by-room/:id', async function(req, res){
+app.get('/messages-by-room/:id', async function (req, res) {
 
   const user = await checkUserAuthentication(req, res);
-  if (!user){
+  if (!user) {
     return;
   }
 
@@ -261,8 +262,7 @@ io.on('connection', async (socket) => {
     }
   });
 
-  socket.on('SEND_MESSAGE', async ({message, token, userId}) => {
-    console.log(message, token);
+  socket.on('SEND_MESSAGE', async ({message, token, userId, roomId}) => {
 
     try {
       const user = await UserService.verifyToken(token);
@@ -281,6 +281,38 @@ io.on('connection', async (socket) => {
       console.error(e);
     }
 
+  });
+
+  socket.on('ADD_INTO_ROOM', async ({token, userId, roomId, userIds}) => {
+    try {
+      const user = await UserService.verifyToken(token);
+      if (user) {
+        if (!roomId) {
+
+          userIds = [user.id, userId, ...userIds];
+          const {roomId, result} = await UserService.createRoom(user.id, userIds);
+
+          const sockets = ROOM_ID_SOCKET_MAP.get(roomId) || [];
+          console.log(result);
+          for (let id of userIds) {
+            const socket = USER_ID_SOCKET_MAP.get(id);
+            if (socket) {
+              const users = await UserService.getByIds(userIds.filter(uid => uid !== id));
+              socket.emit('NEW_ROOM', {
+                roomId,
+                userId: user.id,
+                users
+              });
+
+              sockets.push(socket);
+            }
+          }
+          ROOM_ID_SOCKET_MAP.set(roomId, sockets);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
   });
 
   socket.on('disconnect', function () {
@@ -307,8 +339,8 @@ http.listen(3000, function () {
 
 function getUserArray(token) {
   const USERARRAY = [];
-  for (let access_token in USER_INFO){
-    if (access_token !== token){
+  for (let access_token in USER_INFO) {
+    if (access_token !== token) {
       USERARRAY.push(USER_INFO[access_token]);
     }
   }

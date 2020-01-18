@@ -7,7 +7,6 @@
     <Messages @updateLatestMessage="updateLatestMessage"
               :contacts="contacts"
               :selected-contact="selectedContact"
-              :selected-room="selectedRoom"
               :messages="selectedContactMessages"/>
   </div>
 </template>
@@ -17,6 +16,7 @@
   import Messages from "./Messages";
   import httpClient from "../http.service";
   import auth from "../auth.service";
+  import eventBus from "../event-bus";
 
   export default {
     name: 'Messenger',
@@ -27,7 +27,6 @@
         rooms: [],
         connectedUsers: [],
         selectedContact: null,
-        selectedRoom: null,
         selectedContactMessages: []
       }
     },
@@ -57,6 +56,13 @@
       USER_LIST(contacts) {
         const currentUser = auth.getUser();
         this.connectedUsers = contacts.filter(u => u.id !== currentUser.id);
+      },
+      NEW_ROOM(newRoom) {
+        console.log(newRoom);
+        this.rooms.push(newRoom);
+        if (newRoom.userId === auth.getUser().id) {
+          eventBus.$emit('newRoomCreated', newRoom);
+        }
       }
     },
     methods: {
@@ -68,7 +74,7 @@
         }
       },
       async selectRoom(room){
-        this.selectedRoom = room;
+        this.selectedContact = room;
         const {data, status} = await httpClient.get('/messages-by-room/' + room.id);
         if (status === 200) {
           this.selectedContactMessages = data;

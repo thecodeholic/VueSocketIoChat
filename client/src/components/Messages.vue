@@ -11,11 +11,11 @@
 
       <b-button id="start-group-chat" pill variant="outline-secondary">+</b-button>
 
-      <b-popover custom-class="contacts-popover" ref="popover" target="start-group-chat">
+      <b-popover :show.sync="showPopover" custom-class="contacts-popover" ref="popover" target="start-group-chat">
         <template v-slot:title>
           Select Contacts
           <div class="mt-2">
-            <b-button size="sm" class="mr-2">Close</b-button>
+            <b-button size="sm" class="mr-2" @click="showPopover = false">Close</b-button>
             <b-button size="sm" variant="primary" @click="startChat">Start Chat</b-button>
           </div>
         </template>
@@ -84,12 +84,12 @@
     name: "Messages",
     props: {
       selectedContact: Object,
-      selectedRoom: Object,
       contacts: Array,
       messages: Array
     },
     data() {
       return {
+        showPopover: false,
         unreadMessages: false,
         shouldBeScrollDown: true,
         newMessage: '',
@@ -112,7 +112,7 @@
         this.$socket.emit('SEND_MESSAGE', {
           token: auth.getToken(),
           message: this.newMessage,
-          userId: this.selectedContact.id
+          [this.selectedContact.email ? 'userId' : 'roomId']: this.selectedContact.id
         });
         this.messages.push({
           message: this.newMessage,
@@ -158,6 +158,13 @@
       },
       startChat() {
         console.log("Start chat with these contact", this.selectedContacts);
+        this.$socket.emit('ADD_INTO_ROOM', {
+          token: auth.getToken(),
+          [this.selectedContact.email ? 'userId' : 'roomId']: this.selectedContact.id,
+          userIds: Object.keys(this.selectedContacts)
+        });
+        this.showPopover = false;
+        this.selectedContacts = {};
       }
     },
     sockets: {

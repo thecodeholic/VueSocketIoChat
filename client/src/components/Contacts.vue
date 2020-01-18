@@ -1,6 +1,6 @@
 <template>
   <div class="contacts">
-    <b-tabs pills justified content-class="mt-3">
+    <b-tabs v-model="tabIndex" pills justified content-class="mt-3">
       <b-tab title="Contacts" active>
         <b-media @click="selectContact(contact)" class="contact" v-for="(contact, index) in contacts" :key="index"
                  :class="{'selected': contact === selectedContact}">
@@ -38,6 +38,8 @@
 </template>
 
 <script>
+  import eventBus from "../event-bus";
+
   export default {
     name: "Contacts",
     props: {
@@ -46,6 +48,7 @@
     },
     data() {
       return {
+        tabIndex: 0,
         selectedContact: null,
         selectedRoom: null,
       }
@@ -61,6 +64,12 @@
         this.selectedRoom = room;
         this.selectedRoom.hasUnreadMessage = false;
       }
+    },
+    mounted() {
+      eventBus.$on('newRoomCreated', newRoom => {
+        this.tabIndex = 1;
+        this.selectRoom(newRoom);
+      });
     }
   }
 </script>
