@@ -29,9 +29,6 @@
             </template>
 
             <h5 class="mt-0">{{contact.name}}</h5>
-            <p class="mb-0">
-              {{contact.latestMessage.message}}
-            </p>
             <span class="indicator-status" :class="{'online': contact.online}"/>
             <span v-b-tooltip="'Unread Messages'" class="unread-message" v-if="contact.hasUnreadMessage"/>
           </b-media>
@@ -85,6 +82,7 @@
     props: {
       selectedContact: Object,
       contacts: Array,
+      rooms: Array,
       messages: Array
     },
     data() {
@@ -171,7 +169,12 @@
       ON_MESSAGE_RECEIVE(message) {
         console.log(message);
         this.$emit('messageReceived', message);
-        const contact = this.contacts.find(c => c.id === message.userId);
+        let contact;
+        if (message.roomId) {
+          contact = this.rooms.find(r => r.id === message.roomId);
+        } else {
+          contact = this.contacts.find(c => c.id === message.userId);
+        }
         this.shouldBeScrollDown = this.isScrollAtTheBottom();
         if (!this.shouldBeScrollDown) {
           this.unreadMessages = true;

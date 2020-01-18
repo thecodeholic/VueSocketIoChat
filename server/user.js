@@ -68,9 +68,19 @@ module.exports = {
   },
   getUsers(user) {
     return new Promise((resolve, reject) => {
-      connection.query(`SELECT id, email, name
-                        FROM users
-                        WHERE id != ?`, user.id, async function (error, users, fields) {
+      connection.query(`SELECT u.id,
+                 u.email,
+                 u.name,
+                 (SELECT message
+                  FROM messages m
+                  WHERE m.sender_id = u.id
+                      AND m.receiver_id = ?
+                     OR m.sender_id = ?
+                      AND m.receiver_id = u.id
+                  ORDER BY send_date DESC
+                  LIMIT 1) as latestMessage
+          FROM users u
+          WHERE u.id != ?`, [user.id, user.id, user.id], async function (error, users, fields) {
         if (error) {
           reject(error);
         } else {
@@ -83,7 +93,7 @@ module.exports = {
     return new Promise((resolve, reject) => {
       connection.query(`
           SELECT r.id,
-                 r.created_by as user_id,
+                 r.created_by              as user_id,
                  GROUP_CONCAT(ru2.user_id) as user_ids,
                  (SELECT message
                   FROM messages m

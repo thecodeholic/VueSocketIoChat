@@ -51,47 +51,26 @@ app.post('/login', async function (req, res) {
 });
 
 app.get('/users', async function (req, res) {
-  if (!req.headers.authorization) {
-    res.status(401);
-    res.send();
-    return;
-  }
-  const token = req.headers.authorization.split(' ')[1]
-  console.log("Authorization ", token);
-  const user = await UserService.verifyToken(token)
-
+  const user = await checkUserAuthentication(req, res);
   if (!user) {
-    res.status(401);
-    res.send();
     return;
   }
 
   let users = await UserService.getUsers(user);
-  // users = users.map(u => {
-  //   console.log(u);
-  //   return {
-  //     ...u,
-  //     latestMessage: {
-  //       message: u.latestMessage
-  //     }
-  //   }
-  // })
+  users = users.map(u => {
+    return {
+      ...u,
+      latestMessage: {
+        message: u.latestMessage
+      }
+    }
+  });
 
   res.send(JSON.stringify(users));
 });
 app.get('/rooms', async function (req, res) {
-  if (!req.headers.authorization) {
-    res.status(401);
-    res.send();
-    return;
-  }
-  const token = req.headers.authorization.split(' ')[1]
-  console.log("Authorization ", token);
-  const user = await UserService.verifyToken(token)
-
+  const user = await checkUserAuthentication(req, res);
   if (!user) {
-    res.status(401);
-    res.send();
     return;
   }
   /**
@@ -102,8 +81,6 @@ app.get('/rooms', async function (req, res) {
    *   },
    *   "
    * }
-   *
-   *
    */
 
   let userIds = [];
@@ -118,38 +95,18 @@ app.get('/rooms', async function (req, res) {
   for (let user of users) {
     userObj[user.id] = user;
   }
-  console.log(rooms);
   console.log(userIds, userObj);
   for (let room of rooms) {
     room.users = users.filter(u => room.user_ids.includes(u.id));
   }
   console.log(rooms);
-  // users = users.map(u => {
-  //   console.log(u);
-  //   return {
-  //     ...u,
-  //     latestMessage: {
-  //       message: u.latestMessage
-  //     }
-  //   }
-  // })
 
   res.send(JSON.stringify(rooms));
 });
 
 app.get('/messages/:id', async function (req, res) {
-  if (!req.headers.authorization) {
-    res.status(401);
-    res.send();
-    return;
-  }
-  const token = req.headers.authorization.split(' ')[1]
-  console.log("Authorization ", token);
-  const user = await UserService.verifyToken(token)
-
+  const user = await checkUserAuthentication(req, res);
   if (!user) {
-    res.status(401);
-    res.send();
     return;
   }
 
@@ -168,24 +125,6 @@ app.get('/messages/:id', async function (req, res) {
 
   res.send(JSON.stringify(messages));
 });
-
-async function checkUserAuthentication(req, res) {
-  if (!req.headers.authorization) {
-    res.status(401);
-    res.send();
-    return null;
-  }
-  const token = req.headers.authorization.split(' ')[1];
-  console.log("Authorization ", token);
-  const user = await UserService.verifyToken(token);
-
-  if (!user) {
-    res.status(401);
-    res.send();
-    return null;
-  }
-  return user;
-}
 
 app.get('/messages-by-room/:id', async function (req, res) {
 
@@ -224,6 +163,9 @@ io.on('connection', async (socket) => {
         USER_INFO[token] = user;
         SOCKET_TOKEN_MAP.set(socket, token);
         USER_ID_SOCKET_MAP.set(user.id, socket);
+
+        populateRoomIdSocketMap(user, socket);
+
         // socket.broadcast.emit('USER_CONNECTED', user);
         console.log(getUserArray(token));
         io.emit('USER_LIST', getUserArray(''));
@@ -249,6 +191,8 @@ io.on('connection', async (socket) => {
         USER_INFO[token] = user;
         SOCKET_TOKEN_MAP.set(socket, token);
         USER_ID_SOCKET_MAP.set(user.id, socket);
+
+        populateRoomIdSocketMap(user, socket);
         // socket.broadcast.emit('USER_CONNECTED', USER_INFO[token]);
         io.emit('USER_LIST', getUserArray(''));
         console.log(`User "${user.name}" logged in`);
@@ -267,15 +211,25 @@ io.on('connection', async (socket) => {
     try {
       const user = await UserService.verifyToken(token);
       if (user) {
-        const socket = USER_ID_SOCKET_MAP.get(userId);
+        let sockets = [];
+        if (roomId) {
+          sockets = ROOM_ID_SOCKET_MAP.get(roomId);
+        } else {
+          sockets = [USER_ID_SOCKET_MAP.get(userId)];
+        }
 
-        const msg = await MessageService.saveMessage(user.id, userId, message);
+        const msg = await MessageService.saveMessage(user.id, userId, roomId, message);
 
-        socket.emit('ON_MESSAGE_RECEIVE', {
-          userId: user.id,
-          message: message,
-          time: new Date().toISOString()
-        });
+        for (let s of sockets) {
+          if (s !== socket) {
+            s.emit('ON_MESSAGE_RECEIVE', {
+              userId: user.id,
+              roomId,
+              message: message,
+              time: new Date().toISOString()
+            });
+          }
+        }
       }
     } catch (e) {
       console.error(e);
@@ -299,7 +253,7 @@ io.on('connection', async (socket) => {
             if (socket) {
               const users = await UserService.getByIds(userIds.filter(uid => uid !== id));
               socket.emit('NEW_ROOM', {
-                roomId,
+                id: roomId,
                 userId: user.id,
                 users
               });
@@ -345,4 +299,32 @@ function getUserArray(token) {
     }
   }
   return USERARRAY;
+}
+
+
+async function checkUserAuthentication(req, res) {
+  if (!req.headers.authorization) {
+    res.status(401);
+    res.send();
+    return null;
+  }
+  const token = req.headers.authorization.split(' ')[1];
+  console.log("Authorization ", token);
+  const user = await UserService.verifyToken(token);
+
+  if (!user) {
+    res.status(401);
+    res.send();
+    return null;
+  }
+  return user;
+}
+
+async function populateRoomIdSocketMap(user, socket) {
+  const rooms = await UserService.getRooms(user);
+  for (let room of rooms) {
+    const sockets = ROOM_ID_SOCKET_MAP.get(room.id) || [];
+    sockets.push(socket);
+    ROOM_ID_SOCKET_MAP.set(room.id, sockets);
+  }
 }

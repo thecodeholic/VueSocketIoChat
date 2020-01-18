@@ -10,8 +10,7 @@
 
           <h5 class="mt-0">{{contact.name}}</h5>
           <p class="mb-0">
-            {{contact.email}}
-<!--            {{contact.latestMessage.message}}-->
+            {{contact.latestMessage.message}}
           </p>
           <span class="indicator-status" :class="{'online': contact.online}"></span>
           <span v-b-tooltip="'Unread Messages'" class="unread-message" v-if="contact.hasUnreadMessage"></span>

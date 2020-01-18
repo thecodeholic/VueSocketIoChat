@@ -1,14 +1,15 @@
 <template>
-  <div class="messenger">
-    <Contacts @selectContact="selectContact"
-              @selectRoom="selectRoom"
-              :contacts="allUsers"
-              :rooms="rooms"/>
-    <Messages @updateLatestMessage="updateLatestMessage"
-              :contacts="contacts"
-              :selected-contact="selectedContact"
-              :messages="selectedContactMessages"/>
-  </div>
+    <div class="messenger">
+        <Contacts @selectContact="selectContact"
+                  @selectRoom="selectRoom"
+                  :contacts="allUsers"
+                  :rooms="rooms"/>
+        <Messages @updateLatestMessage="updateLatestMessage"
+                  :contacts="contacts"
+                  :rooms="rooms"
+                  :selected-contact="selectedContact"
+                  :messages="selectedContactMessages"/>
+    </div>
 </template>
 
 <script>
@@ -73,20 +74,27 @@
           this.selectedContactMessages = data;
         }
       },
-      async selectRoom(room){
+      async selectRoom(room) {
         this.selectedContact = room;
         const {data, status} = await httpClient.get('/messages-by-room/' + room.id);
         if (status === 200) {
           this.selectedContactMessages = data;
         }
       },
-      updateLatestMessage({contact, message}){
-        const user = this.contacts.find(u => u.id === contact.id)
-        user.latestMessage = message;
-        if (!this.selectedContact || user.id !== this.selectedContact.id) {
-          user.hasUnreadMessage = true;
+      updateLatestMessage({contact, message}) {
+        let userOrGroup;
+        if (contact.email) {
+          userOrGroup = this.contacts.find(u => u.id === contact.id);
+        } else {
+          userOrGroup = this.rooms.find(r => r.id === contact.id);
         }
+        userOrGroup.latestMessage = message;
+        if (!this.selectedContact || userOrGroup.id !== this.selectedContact.id) {
+          userOrGroup.hasUnreadMessage = true;
+        }
+
         this.contacts = [...this.contacts];
+        this.rooms = [...this.rooms];
       }
     },
     async mounted() {
@@ -111,10 +119,10 @@
 </script>
 
 <style scoped lang="scss">
-  .messenger {
-    display: flex;
-    background-color: white;
-    height: 100%;
-    border: 1px solid #ebebeb;
-  }
+    .messenger {
+        display: flex;
+        background-color: white;
+        height: 100%;
+        border: 1px solid #ebebeb;
+    }
 </style>

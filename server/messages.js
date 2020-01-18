@@ -32,12 +32,13 @@ module.exports = {
       });
     })
   },
-  saveMessage: (sender_id, receiver_id, message) => {
+  saveMessage: (sender_id, receiver_id, room_id, message) => {
     return new Promise((resolve, reject) => {
       let msg = {
         message,
         sender_id,
         receiver_id,
+        room_id,
         send_date: Date.now()
       };
       connection.query('INSERT INTO messages SET ?', msg, function (error, results, fields) {
