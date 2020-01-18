@@ -66,17 +66,74 @@ app.get('/users', async function(req, res){
   }
 
   let users = await UserService.getUsers(user);
-  users = users.map(u => {
-    console.log(u);
-    return {
-      ...u,
-      latestMessage: {
-        message: u.latestMessage
-      }
-    }
-  })
+  // users = users.map(u => {
+  //   console.log(u);
+  //   return {
+  //     ...u,
+  //     latestMessage: {
+  //       message: u.latestMessage
+  //     }
+  //   }
+  // })
 
   res.send(JSON.stringify(users));
+});
+app.get('/rooms', async function(req, res){
+  if (!req.headers.authorization){
+    res.status(401);
+    res.send();
+    return;
+  }
+  const token = req.headers.authorization.split(' ')[1]
+  console.log("Authorization ", token);
+  const user = await UserService.verifyToken(token)
+
+  if (!user){
+    res.status(401);
+    res.send();
+    return;
+  }
+  /**
+   * {
+   *   "roomId": {
+   *     "latestMessage": "dasda",
+   *     "users": []
+   *   },
+   *   "
+   * }
+   *
+   *
+   */
+
+  let userIds = [];
+  let rooms = await UserService.getRooms(user);
+  rooms.forEach(room => {
+    room.user_ids = room.user_ids.split(',').map(id => parseInt(id));
+    userIds = userIds.concat(room.user_ids);
+  });
+
+  const users = await UserService.getByIds(userIds);
+  const userObj = {};
+  for (let user of users) {
+    userObj[user.id] = user;
+  }
+  console.log(rooms);
+  console.log(userIds, userObj);
+  for (let room of rooms){
+    room.users = users.filter(u => room.user_ids.includes(u.id));
+  }
+  console.log(rooms);
+  // users = users.map(u => {
+  //   console.log(u);
+  //   return {
+  //     ...u,
+  //     latestMessage: {
+  //       message: u.latestMessage
+  //     }
+  //   }
+  // })
+
+  res.send(JSON.stringify(rooms));
 });
 
 app.get('/messages/:id', async function(req, res){
@@ -103,6 +160,48 @@ app.get('/messages/:id', async function(req, res){
       id: msg.id,
       sender: msg.sender_id === user.id ? 'me' : msg.sender_id,
       userId: userId,
+      message: msg.message,
+      time: msg.send_date
+    }
+  });
+
+  res.send(JSON.stringify(messages));
+});
+
+async function checkUserAuthentication(req, res){
+  if (!req.headers.authorization){
+    res.status(401);
+    res.send();
+    return null;
+  }
+  const token = req.headers.authorization.split(' ')[1];
+  console.log("Authorization ", token);
+  const user = await UserService.verifyToken(token);
+
+  if (!user){
+    res.status(401);
+    res.send();
+    return null;
+  }
+  return user;
+}
+
+app.get('/messages-by-room/:id', async function(req, res){
+
+  const user = await checkUserAuthentication(req, res);
+  if (!user){
+    return;
+  }
+
+  const roomId = req.params.id;
+  console.log(roomId);
+  let messages = await MessageService.getMessagesByRoom(roomId);
+  console.log(messages);
+  messages = messages.map(msg => {
+    return {
+      id: msg.id,
+      sender: msg.sender_id === user.id ? 'me' : msg.sender_id,
+      roomId: roomId,
       message: msg.message,
       time: msg.send_date
     }

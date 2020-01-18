@@ -19,6 +19,19 @@ module.exports = {
       });
     })
   },
+  getMessagesByRoom: (roomId) => {
+    return new Promise((resolve, reject) => {
+      connection.query('SELECT * FROM messages WHERE room_id = ?', [roomId], async function (error, messages, fields) {
+        if (error) {
+          reject(error);
+        } else if (messages) {
+          resolve(messages);
+        } else {
+          resolve(false);
+        }
+      });
+    })
+  },
   saveMessage: (sender_id, receiver_id, message) => {
     return new Promise((resolve, reject) => {
       let msg = {

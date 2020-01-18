@@ -13,4 +13,9 @@
     padding: 60px;
     background-color: #f6f6f6;
   }
+
+  .contacts-popover .popover-body{
+    overflow: auto;
+    padding: 0;
+  }
 </style>

@@ -1,6 +1,5 @@
 import axios from 'axios';
 import auth from "./auth.service";
-import router from "./router";
 
 const httpClient = axios.create({
   baseURL: 'http://localhost:3000',
@@ -18,7 +17,8 @@ httpClient.interceptors.response.use(response => {
   return response;
 }, (error) => {
   if (401 === error.response.status) {
-    router.push('/login');
+    auth.goToLogin();
+    return Promise.reject(error);
   } else {
     return Promise.reject(error);
   }
@@ -26,6 +26,9 @@ httpClient.interceptors.response.use(response => {
 
 httpClient.getUsers = function () {
   return this.get('/users')
+}
+httpClient.getRooms = function () {
+  return this.get('/rooms')
 }
 
 

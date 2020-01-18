@@ -1,9 +1,13 @@
 <template>
   <div class="messenger">
-    <Contacts @selectContact="selectContact" :contacts="allUsers"/>
+    <Contacts @selectContact="selectContact"
+              @selectRoom="selectRoom"
+              :contacts="allUsers"
+              :rooms="rooms"/>
     <Messages @updateLatestMessage="updateLatestMessage"
               :contacts="contacts"
               :selected-contact="selectedContact"
+              :selected-room="selectedRoom"
               :messages="selectedContactMessages"/>
   </div>
 </template>
@@ -20,8 +24,10 @@
     data() {
       return {
         contacts: [],
+        rooms: [],
         connectedUsers: [],
         selectedContact: null,
+        selectedRoom: null,
         selectedContactMessages: []
       }
     },
@@ -56,12 +62,17 @@
     methods: {
       async selectContact(contact) {
         this.selectedContact = contact;
-        // if (!contact.messages.length){
         const {data, status} = await httpClient.get('/messages/' + contact.id);
         if (status === 200) {
           this.selectedContactMessages = data;
         }
-        // }
+      },
+      async selectRoom(room){
+        this.selectedRoom = room;
+        const {data, status} = await httpClient.get('/messages-by-room/' + room.id);
+        if (status === 200) {
+          this.selectedContactMessages = data;
+        }
       },
       updateLatestMessage({contact, message}){
         const user = this.contacts.find(u => u.id === contact.id)
@@ -77,6 +88,14 @@
         const {data, status} = await httpClient.getUsers();
         if (status === 200) {
           this.contacts = data;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      try {
+        const {data, status} = await httpClient.getRooms();
+        if (status === 200) {
+          this.rooms = data;
         }
       } catch (e) {
         console.error(e);

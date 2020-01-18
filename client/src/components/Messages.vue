@@ -1,5 +1,43 @@
 <template>
   <div class="messages-wrapper">
+    <div v-if="selectedContact" class="contact-details p-2 shadow-sm">
+      <b-media>
+        <template v-slot:aside>
+          <b-img rounded="circle" blank blank-color="#ccc" width="48" alt="placeholder" />
+        </template>
+
+        <h5>{{selectedContact.name}}</h5>
+      </b-media>
+
+      <b-button id="start-group-chat" pill variant="outline-secondary">+</b-button>
+
+      <b-popover custom-class="contacts-popover" ref="popover" target="start-group-chat">
+        <template v-slot:title>
+          Select Contacts
+          <div class="mt-2">
+            <b-button size="sm" class="mr-2">Close</b-button>
+            <b-button size="sm" variant="primary" @click="startChat">Start Chat</b-button>
+          </div>
+        </template>
+
+        <div class="contacts">
+          <b-media @click="toggleContactSelection(contact)" class="contact mb-2" v-for="(contact, index) in contacts"
+                   :key="index"
+                   :class="{'selected': selectedContacts[contact.id]}">
+            <template v-slot:aside>
+              <b-img rounded="circle" blank blank-color="#ccc" width="40" alt="placeholder"/>
+            </template>
+
+            <h5 class="mt-0">{{contact.name}}</h5>
+            <p class="mb-0">
+              {{contact.latestMessage.message}}
+            </p>
+            <span class="indicator-status" :class="{'online': contact.online}"/>
+            <span v-b-tooltip="'Unread Messages'" class="unread-message" v-if="contact.hasUnreadMessage"/>
+          </b-media>
+        </div>
+      </b-popover>
+    </div>
     <div class="messages-ctr">
       <div class="messages" ref="messages" @scroll="scrollChange">
         <b-media class="message" v-for="(message, index) in messages" :key="index"
@@ -29,7 +67,7 @@
                   rows="3"
                   v-model="newMessage"
                   no-resize
-          ></b-form-textarea>
+          />
           <b-input-group-append>
             <b-button :disabled="!selectedContact" type="submit" variant="primary">Send</b-button>
           </b-input-group-append>
@@ -46,6 +84,7 @@
     name: "Messages",
     props: {
       selectedContact: Object,
+      selectedRoom: Object,
       contacts: Array,
       messages: Array
     },
@@ -54,6 +93,7 @@
         unreadMessages: false,
         shouldBeScrollDown: true,
         newMessage: '',
+        selectedContacts: {}
         // selectedContactMessages: []
       }
     },
@@ -65,7 +105,7 @@
     methods: {
       sendMessage($event) {
         $event.preventDefault();
-        if (!this.newMessage.trim()){
+        if (!this.newMessage.trim()) {
           return;
         }
         console.log("Sending");
@@ -99,10 +139,25 @@
         const messages = this.$refs.messages;
         messages.scrollTop = 10000000;
       },
-      onKeyUp(ev){
-        if (ev.key === 'Enter' && !ev.shiftKey){
+      onKeyUp(ev) {
+        if (ev.key === 'Enter' && !ev.shiftKey) {
           this.sendMessage(ev);
         }
+      },
+      toggleContactSelection(contact) {
+        console.log(contact, this.selectedContacts);
+        if (this.selectedContacts[contact.id]) {
+          delete this.selectedContacts[contact.id];
+          this.selectedContacts = {...this.selectedContacts};
+        } else {
+          this.selectedContacts = {
+            ...this.selectedContacts,
+            [contact.id]: contact
+          };
+        }
+      },
+      startChat() {
+        console.log("Start chat with these contact", this.selectedContacts);
       }
     },
     sockets: {
@@ -134,6 +189,39 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+  }
+
+  .contact-details {
+    position: relative;
+
+    #start-group-chat {
+      position: absolute;
+      right: 15px;
+      top: 15px;
+    }
+  }
+
+
+  .contacts-popover {
+    width: 240px;
+    max-height: 320px;
+    outline: 0;
+    display: flex;
+    flex-direction: column;
+
+    .contacts {
+      overflow: auto;
+      flex: 1;
+    }
+
+    .contact {
+      padding: 0.5rem 1rem;
+
+      &.selected {
+        background-color: #0b82ff;
+        color: white;
+      }
+    }
   }
 
   .messages-ctr {

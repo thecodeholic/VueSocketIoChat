@@ -1,3 +1,4 @@
+import router from "./router";
 
 
 const auth = {
@@ -19,6 +20,12 @@ const auth = {
 
   getToken(){
     return sessionStorage.getItem('ACCESS_TOKEN');
+  },
+
+  goToLogin(){
+    sessionStorage.removeItem('CURRENT_USER');
+    sessionStorage.removeItem('ACCESS_TOKEN');
+    router.push('/login');
   }
 };
 
