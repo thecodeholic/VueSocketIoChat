@@ -1,15 +1,15 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import Home from '../views/Home.vue'
-import auth from "../auth.service";
+import auth from "../Chat/auth.service";
+import Messenger from "../Chat/components/Messenger";
 
 Vue.use(VueRouter)
 
 const routes = [
   {
     path: '/',
-    name: 'home',
-    component: Home,
+    name: 'messenger',
+    component: Messenger,
     meta: {
       requiresAuth: true
     }

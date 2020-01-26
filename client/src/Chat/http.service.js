@@ -26,10 +26,10 @@ httpClient.interceptors.response.use(response => {
 
 httpClient.getUsers = function () {
   return this.get('/users')
-}
+};
 httpClient.getRooms = function () {
   return this.get('/rooms')
-}
+};
 
 
 export default httpClient;

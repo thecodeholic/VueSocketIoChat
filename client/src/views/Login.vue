@@ -38,7 +38,7 @@
 
 <script>
   import axios from 'axios';
-  import auth from "../auth.service";
+  import auth from "../Chat/auth.service";
 
   export default {
     name: "Login",
