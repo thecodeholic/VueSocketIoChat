@@ -1,3 +1,5 @@
+require('dotenv').config({path: '../.env'});
+
 var app = require('express')();
 var http = require('http').createServer(app);
 var io = require('socket.io')(http);
@@ -56,17 +58,23 @@ app.get('/users', async function (req, res) {
     return;
   }
 
-  let users = await UserService.getUsers(user);
-  users = users.map(u => {
-    return {
-      ...u,
-      latestMessage: {
-        message: u.latestMessage
-      }
-    }
-  });
+  try {
 
-  res.send(JSON.stringify(users));
+    let users = await UserService.getUsers(user);
+    users = users.map(u => {
+      return {
+        ...u,
+        latestMessage: {
+          message: u.latestMessage
+        }
+      }
+    });
+
+    res.send(JSON.stringify(users));
+  } catch (e) {
+    console.error(e);
+    res.send([]);
+  }
 });
 app.get('/rooms', async function (req, res) {
   const user = await checkUserAuthentication(req, res);
@@ -82,26 +90,30 @@ app.get('/rooms', async function (req, res) {
    *   "
    * }
    */
+  try {
 
-  let userIds = [];
-  let rooms = await UserService.getRooms(user);
-  rooms.forEach(room => {
-    room.user_ids = room.user_ids.split(',').map(id => parseInt(id));
-    userIds = userIds.concat(room.user_ids);
-  });
+    let userIds = [];
+    let rooms = await UserService.getRooms(user);
+    rooms.forEach(room => {
+      room.user_ids = room.user_ids.split(',').map(id => parseInt(id));
+      userIds = userIds.concat(room.user_ids);
+    });
 
-  const users = await UserService.getByIds(userIds);
-  const userObj = {};
-  for (let user of users) {
-    userObj[user.id] = user;
+    const users = await UserService.getByIds(userIds);
+    const userObj = {};
+    for (let user of users) {
+      userObj[user.id] = user;
+    }
+    console.log(userIds, userObj);
+    for (let room of rooms) {
+      room.users = users.filter(u => room.user_ids.includes(u.id));
+    }
+    console.log(rooms);
+
+    res.send(JSON.stringify(rooms));
+  } catch (e) {
+    res.send([]);
   }
-  console.log(userIds, userObj);
-  for (let room of rooms) {
-    room.users = users.filter(u => room.user_ids.includes(u.id));
-  }
-  console.log(rooms);
-
-  res.send(JSON.stringify(rooms));
 });
 
 app.get('/messages/:id', async function (req, res) {
@@ -110,20 +122,26 @@ app.get('/messages/:id', async function (req, res) {
     return;
   }
 
-  const userId = req.params.id;
-  console.log(userId);
-  let messages = await MessageService.getMessages(user.id, userId);
-  messages = messages.map(msg => {
-    return {
-      id: msg.id,
-      sender: msg.sender_id === user.id ? 'me' : msg.sender_id,
-      userId: userId,
-      message: msg.message,
-      time: msg.send_date
-    }
-  });
+  try {
 
-  res.send(JSON.stringify(messages));
+    const userId = req.params.id;
+    console.log(userId);
+    let messages = await MessageService.getMessages(user.id, userId);
+    messages = messages.map(msg => {
+      return {
+        id: msg.id,
+        sender: msg.sender_id === user.id ? 'me' : msg.sender_id,
+        userId: userId,
+        message: msg.message,
+        time: msg.send_date
+      }
+    });
+
+    res.send(JSON.stringify(messages));
+  } catch (e) {
+    console.error(e);
+    res.send([]);
+  }
 });
 
 app.get('/messages-by-room/:id', async function (req, res) {
@@ -132,22 +150,27 @@ app.get('/messages-by-room/:id', async function (req, res) {
   if (!user) {
     return;
   }
+  try {
 
-  const roomId = req.params.id;
-  console.log(roomId);
-  let messages = await MessageService.getMessagesByRoom(roomId);
-  console.log(messages);
-  messages = messages.map(msg => {
-    return {
-      id: msg.id,
-      sender: msg.sender_id === user.id ? 'me' : msg.sender_name,
-      roomId: roomId,
-      message: msg.message,
-      time: msg.send_date
-    }
-  });
+    const roomId = req.params.id;
+    console.log(roomId);
+    let messages = await MessageService.getMessagesByRoom(roomId);
+    console.log(messages);
+    messages = messages.map(msg => {
+      return {
+        id: msg.id,
+        sender: msg.sender_id === user.id ? 'me' : msg.sender_name,
+        roomId: roomId,
+        message: msg.message,
+        time: msg.send_date
+      }
+    });
 
-  res.send(JSON.stringify(messages));
+    res.send(JSON.stringify(messages));
+  } catch (e) {
+    console.error();
+    res.send([]);
+  }
 });
 
 io.on('connection', async (socket) => {
@@ -322,10 +345,14 @@ async function checkUserAuthentication(req, res) {
 }
 
 async function populateRoomIdSocketMap(user, socket) {
-  const rooms = await UserService.getRooms(user);
-  for (let room of rooms) {
-    const sockets = ROOM_ID_SOCKET_MAP.get(room.id) || [];
-    sockets.push(socket);
-    ROOM_ID_SOCKET_MAP.set(room.id, sockets);
+  try {
+    const rooms = await UserService.getRooms(user);
+    for (let room of rooms) {
+      const sockets = ROOM_ID_SOCKET_MAP.get(room.id) || [];
+      sockets.push(socket);
+      ROOM_ID_SOCKET_MAP.set(room.id, sockets);
+    }
+  } catch (e) {
+    console.error(e);
   }
 }
