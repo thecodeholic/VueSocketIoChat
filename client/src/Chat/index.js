@@ -4,7 +4,7 @@ import auth from "./auth.service";
 
 Vue.use(new VueSocketIO({
   debug: true,
-  connection: 'http://localhost:3000',
+  connection: process.env.VUE_APP_NODE_SERVER,
   vuex: {
     actionPrefix: 'SOCKET_',
     mutationPrefix: 'SOCKET_'

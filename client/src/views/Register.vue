@@ -60,7 +60,7 @@
     methods: {
       async registerUser($event){
         $event.preventDefault();
-        const {data, status} = await axios.post('http://localhost:3000/register', this.form);
+        const {data, status} = await auth.register(this.form);
         if (status === 200){
           auth.setUser(data);
           this.$router.push('/');
