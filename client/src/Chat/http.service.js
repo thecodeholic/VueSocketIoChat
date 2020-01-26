@@ -17,7 +17,7 @@ httpClient.interceptors.response.use(response => {
   return response;
 }, (error) => {
   if (401 === error.response.status) {
-    auth.goToLogin();
+    auth.logout()
     return Promise.reject(error);
   } else {
     return Promise.reject(error);

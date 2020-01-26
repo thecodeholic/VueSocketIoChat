@@ -37,7 +37,6 @@
 </template>
 
 <script>
-  import axios from 'axios';
   import auth from "../Chat/auth.service";
 
   export default {
@@ -50,12 +49,11 @@
     methods: {
       async login($event) {
         $event.preventDefault();
-        const {data, status} = await axios.post('http://localhost:3000/login', this.form);
+        const {data, status} = await auth.login(this.form);
         if (status === 200) {
           auth.setUser(data);
           this.$router.push('/');
           // console.log(this.$socket.query.token = auth.getToken());
-          this.$socket.emit('USER_LOGGED_IN', {token: auth.getToken()});
         }
       }
     }
