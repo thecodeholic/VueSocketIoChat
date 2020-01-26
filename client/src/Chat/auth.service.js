@@ -1,32 +1,47 @@
-import router from "./router";
+import router from '../router';
+import axios from "axios";
 
+class AuthService {
+  user = null;
 
-const auth = {
-  user: JSON.parse(sessionStorage.getItem('CURRENT_USER') || null),
+  constructor() {
+    this.user = JSON.parse(sessionStorage.getItem('CURRENT_USER') || null);
+  }
 
-  setUser(u){
+  setUser(u) {
     this.user = u;
     sessionStorage.setItem('CURRENT_USER', JSON.stringify(this.user))
     sessionStorage.setItem('ACCESS_TOKEN', this.user.access_token);
-  },
+  }
 
-  getUser(){
+  getUser() {
     return this.user;
-  },
+  }
 
-  isAuthenticated(){
+  isAuthenticated() {
     return !!this.getToken();
-  },
+  }
 
-  getToken(){
+  getToken() {
     return sessionStorage.getItem('ACCESS_TOKEN');
-  },
+  }
 
-  goToLogin(){
+  login(data) {
+    return axios.post('http://localhost:3000/login', data)
+  }
+
+  logout() {
     sessionStorage.removeItem('CURRENT_USER');
     sessionStorage.removeItem('ACCESS_TOKEN');
-    router.push('/login');
+    const router = this.getRouter();
+    router.push('login');
   }
-};
 
+  getRouter() {
+    //TODO Implement this method
+    return router;
+  }
+}
+
+const auth = new AuthService();
 export default auth;
