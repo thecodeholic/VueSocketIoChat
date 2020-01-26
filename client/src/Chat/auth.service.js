@@ -1,5 +1,6 @@
 import router from '../router';
 import axios from "axios";
+import httpClient from "./http.service";
 
 class AuthService {
   user = null;
@@ -29,11 +30,11 @@ class AuthService {
   }
 
   login(data) {
-    return axios.post('/login', data)
+    return httpClient.post('/login', data)
   }
 
   register(data){
-    return axios.post('/register', data)
+    return httpClient.post('/register', data)
   }
 
   logout() {

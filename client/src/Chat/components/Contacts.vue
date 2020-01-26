@@ -5,7 +5,7 @@
         <b-media @click="selectContact(contact)" class="contact" v-for="(contact, index) in contacts" :key="index"
                  :class="{'selected': contact === selectedContact}">
           <template v-slot:aside>
-            <b-img rounded="circle" blank blank-color="#ccc" width="64" alt="placeholder"></b-img>
+            <b-img rounded="circle" blank blank-color="#ccc" width="56" alt="placeholder"></b-img>
           </template>
 
           <h5 class="mt-0">{{contact.name}}</h5>
@@ -20,7 +20,7 @@
         <b-media @click="selectRoom(room)" class="contact" v-for="(room, index) in rooms" :key="index"
                  :class="{'selected': room === selectedRoom}">
           <template v-slot:aside>
-            <b-img rounded="circle" blank blank-color="#ccc" width="64" alt="placeholder"/>
+            <b-img rounded="circle" blank blank-color="#ccc" width="56" alt="placeholder"/>
           </template>
 
           <h5 class="mt-0">{{room.users.length}} users</h5>

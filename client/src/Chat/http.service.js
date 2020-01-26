@@ -6,13 +6,11 @@ const httpClient = axios.create({
 });
 
 httpClient.interceptors.request.use(request => {
-  console.log(request);
   request.headers.Authorization = `Bearer ${auth.getToken()}`;
 
   return request;
 });
 httpClient.interceptors.response.use(response => {
-  console.log(response);
 
   return response;
 }, (error) => {
