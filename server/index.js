@@ -238,7 +238,7 @@ io.on('connection', async (socket) => {
         if (roomId) {
           sockets = ROOM_ID_SOCKET_MAP.get(roomId);
         } else {
-          sockets = [USER_ID_SOCKET_MAP.get(userId)];
+          sockets = USER_ID_SOCKET_MAP.get(userId) ?[USER_ID_SOCKET_MAP.get(userId)] : [];
         }
 
         const msg = await MessageService.saveMessage(user.id, userId, roomId, message);
@@ -333,7 +333,7 @@ async function checkUserAuthentication(req, res) {
     return null;
   }
   const token = req.headers.authorization.split(' ')[1];
-  console.log("Authorization ", token);
+  // console.log("Authorization ", token);
   const user = await UserService.verifyToken(token);
 
   if (!user) {
