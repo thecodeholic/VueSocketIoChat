@@ -1,6 +1,6 @@
-const connection = require('./db');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const connection = require('../connection');
 
 module.exports = {
   verifyToken: token => {
@@ -37,7 +37,7 @@ module.exports = {
               reject(error);
               return;
             }
-            console.log(results);
+            // console.log(results);
             userData.id = results.insertId;
             resolve(userData);
           });

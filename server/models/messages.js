@@ -1,4 +1,4 @@
-const connection = require('./db');
+const connection = require('../connection');
 
 module.exports = {
   getMessages: (userId1, userId2) => {
@@ -48,7 +48,7 @@ module.exports = {
           reject(error);
           return;
         }
-        console.log(results);
+        // console.log(results);
         msg.id = results.insertId;
         resolve(msg);
       });
