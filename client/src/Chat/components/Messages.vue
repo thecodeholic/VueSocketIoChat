@@ -3,7 +3,7 @@
     <div v-if="selectedContact" class="contact-details p-2 shadow-sm">
       <b-media>
         <template v-slot:aside>
-          <b-img rounded="circle" blank blank-color="#ccc" width="48" alt="placeholder" />
+          <b-img rounded="circle" blank blank-color="#ccc" width="48" alt="placeholder"/>
         </template>
 
         <h5>{{selectedContact.name}}</h5>
@@ -21,7 +21,13 @@
         </template>
 
         <div class="contacts">
-          <b-media @click="toggleContactSelection(contact)" class="contact mb-2" v-for="(contact, index) in contacts"
+          <b-input-group class="p-2">
+            <b-form-input v-model="contactsFilterKeyword" placeholder="Type to search user"/>
+            <b-input-group-append>
+              <b-button variant="info">Search</b-button>
+            </b-input-group-append>
+          </b-input-group>
+          <b-media @click="toggleContactSelection(contact)" class="contact mb-2" v-for="(contact, index) in filteredContacts"
                    :key="index"
                    :class="{'selected': selectedContacts[contact.id]}">
             <template v-slot:aside>
@@ -87,12 +93,23 @@
     },
     data() {
       return {
+        contactsFilterKeyword: '',
         showPopover: false,
         unreadMessages: false,
         shouldBeScrollDown: true,
         newMessage: '',
         selectedContacts: {}
         // selectedContactMessages: []
+      }
+    },
+    computed: {
+      filteredContacts(){
+        if (!this.contactsFilterKeyword){
+          return this.contacts;
+        }
+        return this.contacts.filter(c => {
+          return c.email.includes(this.contactsFilterKeyword) || c.name.includes(this.contactsFilterKeyword)
+        });
       }
     },
     // watch: {
@@ -213,15 +230,15 @@
 
 
   .contacts-popover {
-    width: 240px;
-    max-height: 320px;
+    width: 320px;
+    max-height: 70vh;
     outline: 0;
     display: flex;
     flex-direction: column;
 
     .contacts {
-      overflow: auto;
-      flex: 1;
+      width: 100%;
+      overflow: hidden;
     }
 
     .contact {
@@ -231,6 +248,11 @@
         background-color: #0b82ff;
         color: white;
       }
+    }
+
+    & /deep/ .popover-body {
+      padding: 0;
+      overflow-y: auto;
     }
   }
 

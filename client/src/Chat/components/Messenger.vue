@@ -1,15 +1,15 @@
 <template>
-    <div class="messenger">
-        <Contacts @selectContact="selectContact"
-                  @selectRoom="selectRoom"
-                  :contacts="allUsers"
-                  :rooms="rooms"/>
-        <Messages @updateLatestMessage="updateLatestMessage"
-                  :contacts="contacts"
-                  :rooms="rooms"
-                  :selected-contact="selectedContact"
-                  :messages="selectedContactMessages"/>
-    </div>
+  <div class="messenger">
+    <Contacts @selectContact="selectContact"
+              @selectRoom="selectRoom"
+              :contacts="allUsers"
+              :rooms="rooms"/>
+    <Messages @updateLatestMessage="updateLatestMessage"
+              :contacts="contacts"
+              :rooms="rooms"
+              :selected-contact="selectedContact"
+              :messages="selectedContactMessages"/>
+  </div>
 </template>
 
 <script>
@@ -45,7 +45,6 @@
           }
           newUsers.push(user);
         }
-        console.log(newUsers);
         return newUsers.sort((u1) => {
           if (u1.online) {
             return -1;
@@ -55,6 +54,7 @@
     },
     sockets: {
       USER_LIST(contacts) {
+        // debugger;
         const currentUser = auth.getUser();
         this.connectedUsers = contacts.filter(u => u.id !== currentUser.id);
       },
@@ -118,11 +118,27 @@
   }
 </script>
 
-<style scoped lang="scss">
-    .messenger {
-        display: flex;
-        background-color: white;
-        height: 100%;
-        border: 1px solid #ebebeb;
+<style lang="scss">
+
+  .route-messenger {
+    #menu-content-wrapper {
+      max-height: 100%;
     }
+
+    #content {
+      max-height: 100%;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .messenger {
+      display: flex;
+      background-color: white;
+      height: 100%;
+      border: 1px solid #ebebeb;
+    }
+  }
+  .route-messenger .page-header-fixed  #content{
+    padding-top: 0;
+  }
 </style>
