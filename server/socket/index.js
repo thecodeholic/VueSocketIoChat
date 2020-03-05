@@ -11,30 +11,7 @@ class SocketIo {
     this.io = io;
     this.connections = new Map();
 
-    // // middleware
-    // io.use(async (socket, next) => {
-    //   let header = socket.handshake.query.token;
-    //
-    //   try {
-    //     console.log("Verifying token ", header);
-    //     const user = await UserService.verifyToken(header);
-    //     if (user) {
-    //       next(user);
-    //     }
-    //   } catch (e) {
-    //     return next(new Error('authentication error'));
-    //   }
-    // });
-
     this.io.on('connection', this.onConnection.bind(this))
-
-    // this.io.sockets
-    //     .on('connection', socketIOJwt.authorize({
-    //       secret: "secret333",
-    //       timeout: 15000
-    //     }))
-    //     .on('authenticated', this.onAuthenticated.bind(this));
-
   }
 
   async onConnection(socket) {
@@ -66,97 +43,103 @@ class SocketIo {
       }
     }
 
-    socket.on('USER_LOGGED_IN', async ({token}) => {
-      // let token = socket.handshake.query.token;
-      // console.log("USER_LOGGED_IN ", token);
-      try {
-        const user = await UserService.verifyToken(token);
-        if (user) {
-          delete user.password;
-          delete user.access_token;
-          USER_INFO[token] = user;
-          SOCKET_TOKEN_MAP.set(socket, token);
-          USER_ID_SOCKET_MAP.set(user.id, socket);
+    socket.on('USER_LOGGED_IN', this.onUserLogin.bind(this));
 
-          populateRoomIdSocketMap(user, socket);
-          // socket.broadcast.emit('USER_CONNECTED', USER_INFO[token]);
-          this.io.emit('USER_LIST', getUserArray(''));
-          // console.log(`User "${user.name}" logged in`);
-          // console.log(JSON.stringify(USER_INFO, undefined, 2));
-          // console.log(`Emitting event "USER_CONNECTED" to other users that "${user.name}" connected`);
-          // console.log(`Emitting event "USER_LIST" to all connected users`);
-          // console.log("=======================================");
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    });
+    socket.on('SEND_MESSAGE', this.onSendMessage.bind(this, socket));
 
-    socket.on('SEND_MESSAGE', async ({message, token, userId, roomId}) => {
-
-      try {
-        const user = await UserService.verifyToken(token);
-        if (user) {
-          let sockets = [];
-          if (roomId) {
-            sockets = ROOM_ID_SOCKET_MAP.get(roomId);
-          } else {
-            sockets = USER_ID_SOCKET_MAP.get(userId) ? [USER_ID_SOCKET_MAP.get(userId)] : [];
-          }
-
-          const msg = await MessageService.saveMessage(user.id, userId, roomId, message);
-
-          for (let s of sockets) {
-            if (s !== socket) {
-              s.emit('ON_MESSAGE_RECEIVE', {
-                userId: user.id,
-                sender: user.name,
-                roomId,
-                message: message,
-                time: new Date().toISOString()
-              });
-            }
-          }
-        }
-      } catch (e) {
-        console.error(e);
-      }
-
-    });
-
-    socket.on('ADD_INTO_ROOM', async ({token, userId, roomId, userIds}) => {
-      try {
-        const user = await UserService.verifyToken(token);
-        if (user) {
-          if (!roomId) {
-
-            userIds = [user.id, userId, ...userIds];
-            const {roomId, result} = await UserService.createRoom(user.id, userIds);
-
-            const sockets = ROOM_ID_SOCKET_MAP.get(roomId) || [];
-            // console.log(result);
-            for (let id of userIds) {
-              const socket = USER_ID_SOCKET_MAP.get(id);
-              if (socket) {
-                const users = await UserService.getByIds(userIds.filter(uid => uid !== id));
-                socket.emit('NEW_ROOM', {
-                  id: roomId,
-                  userId: user.id,
-                  users
-                });
-
-                sockets.push(socket);
-              }
-            }
-            ROOM_ID_SOCKET_MAP.set(roomId, sockets);
-          }
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    });
+    socket.on('ADD_INTO_ROOM', this.addIntoRoom.bind(this));
 
     socket.on('disconnect', this.onDisconnect.bind(this));
+  }
+
+  async onUserLogin({token}) {
+    // let token = socket.handshake.query.token;
+    // console.log("USER_LOGGED_IN ", token);
+    try {
+      const user = await UserService.verifyToken(token);
+      if (user) {
+        delete user.password;
+        delete user.access_token;
+        USER_INFO[token] = user;
+        SOCKET_TOKEN_MAP.set(socket, token);
+        USER_ID_SOCKET_MAP.set(user.id, socket);
+
+        populateRoomIdSocketMap(user, socket);
+        // socket.broadcast.emit('USER_CONNECTED', USER_INFO[token]);
+        this.io.emit('USER_LIST', getUserArray(''));
+        // console.log(`User "${user.name}" logged in`);
+        // console.log(JSON.stringify(USER_INFO, undefined, 2));
+        // console.log(`Emitting event "USER_CONNECTED" to other users that "${user.name}" connected`);
+        // console.log(`Emitting event "USER_LIST" to all connected users`);
+        // console.log("=======================================");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async onSendMessage(socket, {message, token, userId, roomId}) {
+
+    try {
+      const user = await UserService.verifyToken(token);
+      if (user) {
+        let sockets = [];
+        if (roomId) {
+          sockets = ROOM_ID_SOCKET_MAP.get(roomId);
+        } else {
+          sockets = USER_ID_SOCKET_MAP.get(userId) ? [USER_ID_SOCKET_MAP.get(userId)] : [];
+        }
+
+        const msg = await MessageService.saveMessage(user.id, userId, roomId, message);
+
+        for (let s of sockets) {
+          if (s !== socket) {
+            s.emit('ON_MESSAGE_RECEIVE', {
+              userId: user.id,
+              sender: user.name,
+              roomId,
+              message: message,
+              time: new Date().toISOString()
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+  }
+
+  async addIntoRoom({token, userId, roomId, userIds}) {
+    try {
+      const user = await UserService.verifyToken(token);
+      if (user) {
+        if (!roomId) {
+
+          userIds = [user.id, userId, ...userIds];
+          const {roomId, result} = await UserService.createRoom(user.id, userIds);
+
+          const sockets = ROOM_ID_SOCKET_MAP.get(roomId) || [];
+          // console.log(result);
+          for (let id of userIds) {
+            const socket = USER_ID_SOCKET_MAP.get(id);
+            if (socket) {
+              const users = await UserService.getByIds(userIds.filter(uid => uid !== id));
+              socket.emit('NEW_ROOM', {
+                id: roomId,
+                userId: user.id,
+                users
+              });
+
+              sockets.push(socket);
+            }
+          }
+          ROOM_ID_SOCKET_MAP.set(roomId, sockets);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   onDisconnect(socket) {

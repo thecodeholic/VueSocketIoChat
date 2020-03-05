@@ -8,10 +8,8 @@ const bearerToken = require('express-bearer-token');
 var cors = require('cors');
 
 const routes = require('./routes');
-const UserService = require('./models/user');
-const MessageService = require('./models/messages');
 
-app.use(cors())
+app.use(cors());
 app.options('*', cors());
 app.use(bodyParser.json());       // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
